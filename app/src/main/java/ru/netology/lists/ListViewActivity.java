@@ -21,7 +21,6 @@ public class ListViewActivity extends AppCompatActivity {
     private static final String LENGTH_KEY = "length";
     private static final String EXCLUDED = "excluded";
 
-    private SharedPreferences sharedPreferences;
     private ArrayList<Integer> excludedIndices;
 
     @Override
@@ -31,8 +30,7 @@ public class ListViewActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        sharedPreferences = getPreferences(MODE_PRIVATE);
-        readExcludedIndices();
+        readExcludedIndices(savedInstanceState);
 
         ListView list = findViewById(R.id.list);
 
@@ -46,7 +44,6 @@ public class ListViewActivity extends AppCompatActivity {
         list.setOnItemClickListener((adapterView, view, i, l) -> {
             excludedIndices.add(originalValues.indexOf(values.get(i))); // cancel shift
             values.remove(i);
-            saveExcludedIndices();
             listContentAdapter.notifyDataSetChanged();
         });
 
@@ -55,15 +52,22 @@ public class ListViewActivity extends AppCompatActivity {
             excludedIndices.clear();
             values.clear();
             values.addAll(prepareContent());
-            saveExcludedIndices();
             listContentAdapter.notifyDataSetChanged();
             refreshLayout.setRefreshing(false);
         });
     }
 
-    private void readExcludedIndices() {
-        String data = sharedPreferences.getString(EXCLUDED, "");
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        saveExcludedIndices(outState);
+    }
+
+    private void readExcludedIndices(Bundle b) {
         excludedIndices = new ArrayList<>();
+        if (b == null)
+            return;
+        String data = b.getString(EXCLUDED, "");
         if (data != null && !data.isEmpty()) {
             String[] split = data.split(";");
             for (String s : split)
@@ -71,7 +75,7 @@ public class ListViewActivity extends AppCompatActivity {
         }
     }
 
-    private void saveExcludedIndices() {
+    private void saveExcludedIndices(Bundle b) {
         StringBuilder toSave;
         if (excludedIndices.isEmpty())
             toSave = new StringBuilder();
@@ -80,7 +84,7 @@ public class ListViewActivity extends AppCompatActivity {
             for (int i = 1; i < excludedIndices.size(); i++)
                 toSave.append(";").append(excludedIndices.get(i));
         }
-        sharedPreferences.edit().putString(EXCLUDED, toSave.toString()).apply();
+        b.putString(EXCLUDED, toSave.toString());
     }
 
     private void exclude(List<HashMap<String, String>> list) {
